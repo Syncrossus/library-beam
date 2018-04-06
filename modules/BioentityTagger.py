@@ -59,8 +59,8 @@ class BioEntityTagger(object):
                 pref_name = element_data['pref_name']
                 if len(element) > 2:
                     element_str = element.encode('utf-8')
-                    if ((len(element_str) < 5) and (element_str not in stopwords) or \
-                                    (len(element_str) >= 5) and (element_str.lower() not in stopwords)):
+                    if ((len(element_str) < 5) and (element_str not in stopwords) or
+                            (len(element_str) >= 5) and (element_str.lower() not in stopwords)):
                         idx += 1
                         if self.ignorecase:
                             element_match = element_str.lower()
@@ -211,7 +211,7 @@ class BioEntityTagger(object):
             for j, tag_j in enumerate(sorted_matches):
                 if i != j:
                     if tag_j['start'] <= tag_i['start'] <= tag_j['end'] and \
-                                            tag_j['start'] <= tag_i['end'] <= tag_j['end']:
+                            tag_j['start'] <= tag_i['end'] <= tag_j['end']:
                         keep = False
                         break
                     elif tag_j['start'] > tag_i['start']:
@@ -256,7 +256,7 @@ class BioEntityTagger(object):
         filtered_tag = []
         for t in matches:
             if start <= t['start'] <= end and \
-                                    start <= t['end'] <= end:
+                    start <= t['end'] <= end:
                 filtered_tag.append(t)
             elif t['end'] > end:
                 break
