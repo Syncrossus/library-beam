@@ -4,7 +4,7 @@ import logging
 import re
 import string
 from collections import Counter
-from copy import copy, deepcopy
+from copy import deepcopy
 
 import nltk
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
@@ -27,16 +27,15 @@ from textblob.download_corpora import download_lite
 from unidecode import unidecode
 
 import spacy
+import spacy.util
 from spacy.lang.punctuation import TOKENIZER_INFIXES
 from spacy.tokenizer import Tokenizer
 import en_core_web_md
 # import en_depent_web_md
 
-
 from .AbbreviationFinder import AbbreviationsParser
 from .BioStopWords import DOMAIN_STOP_WORDS, COMMON_WORDS_CORPUS
 from modules.BioentityTagger import MatchedTag
-
 
 
 def create_tokenizer(nlp):
@@ -70,21 +69,19 @@ def create_tokenizer(nlp):
 
 
 def init_spacy_english_language():
-    # nlp = en_core_web_md.load(create_make_doc=create_tokenizer)
-    nlp = en_depent_web_md.load(create_make_doc=create_tokenizer)
+    nlp = en_core_web_md.load(create_make_doc=create_tokenizer)
+    # nlp = en_depent_web_md.load(create_make_doc=create_tokenizer)
 
     # nlp.vocab.strings.set_frozen(True)
     return nlp
 
-
-import spacy.util
 
 SUBJECTS = ["nsubj", "nsubjpass", "csubj", "csubjpass", "agent", "expl", "meta"]
 OBJECTS = ["dobj", "dative", "attr", "oprd", "pobj", "attr", "conj", "compound"]
 
 ANY_NOUN = SUBJECTS + OBJECTS + ['compound']
 SHORT_MATCH_CASE_SENSITIVE_CATEGORIES = ['TARGET', 'DRUG' 'CHEMICAL', 'GENE', 'PROTEINCOMPLEX']
-NOISY_CATEGORIES = []#['DISEASE',]
+NOISY_CATEGORIES = []  # ['DISEASE',]
 
 
 # List of symbols we don't care about
@@ -387,7 +384,7 @@ class PublicationAnalysisSpacy(object):
             if tok.lemma_.lower().strip() in tokens and tok.pos_ in ['PROP', 'PROPN', 'NOUN', 'ORG', 'FCA', 'PERSON', ]:
                 filtered.append(tok)
         c = Counter([tok.lemma_.lower().strip() for tok in filtered])
-        sents_count = len(list(tokens_all.sents))
+        # sents_count = len(list(tokens_all.sents))
         # print 'COMMON LEMMAS'
         # for i in c.most_common(5):
         #     if i[1] > 1:
@@ -482,7 +479,7 @@ class DocumentAnalysisSpacy(object):
 
             if abbreviations:
                 for short, int in list(abbreviations.items()):
-                    if short in document and not int in document:
+                    if short in document and int not in document:
                         document = document.replace(short, int)
             try:
                 self.doc = self.nlp(document)
@@ -497,13 +494,13 @@ class DocumentAnalysisSpacy(object):
         concepts = []
         noun_phrases = []
         self.analysed_sentences = []
-        for si,sentence in enumerate(self.doc.sents):
+        for si, sentence in enumerate(self.doc.sents):
             try:
                 analysed_sentence = SentenceAnalysisSpacy(sentence.text, self.nlp, stopwords=self.stopwords)
                 analysed_sentence.analyse()
                 self.analysed_sentences.append(analysed_sentence)
                 for concept in analysed_sentence.concepts:
-                    concept['sentence']=si
+                    concept['sentence'] = si
                     concepts.append(concept)
                 noun_phrases.extend(analysed_sentence.noun_phrases)
             except:
@@ -551,7 +548,7 @@ class DocumentAnalysisSpacy(object):
                 # else:
                 #     print tag['label'], tokens, token_pos
         '''filter out defined acronyms that don't agree'''
-        #TODO: if the long form is tagged, search for the short form as well
+        # TODO: if the long form is tagged, search for the short form as well
         acronym_filtered_tags = []
         acronyms_to_extend = {}
         lowered_abbreviations = {i.lower(): i for i in abbreviations}
@@ -579,17 +576,17 @@ class DocumentAnalysisSpacy(object):
             if tag['category'] in SHORT_MATCH_CASE_SENSITIVE_CATEGORIES:
                 ''' use case sensive matching for short strings if the word is common'''
                 if (len(tag['match']) < 4) or \
-                        (len(tag['match']) < 7  and tag['match'] in COMMON_WORDS_CORPUS["brown_corpus"]):
-                    original_case = document[tag['start']:  tag['end']]
+                        (len(tag['match']) < 7 and tag['match'] in COMMON_WORDS_CORPUS["brown_corpus"]):
+                    original_case = document[tag['start']: tag['end']]
                     original_case_no_dash = original_case.replace('-', '')
                     original_case_dash_to_space = original_case.replace('-', ' ')
-                    if not ((original_case == tag['label'])
-                            or (original_case_no_dash == tag['label'])
-                            or (original_case_dash_to_space == tag['label'])):
+                    if not ((original_case == tag['label']) or
+                            (original_case_no_dash == tag['label']) or
+                            (original_case_dash_to_space == tag['label'])):
                         tags_to_remove.append(i)
             elif tag['category'] in NOISY_CATEGORIES:
                 '''remove common words from matches'''
-                if tag['match'] in COMMON_WORDS_CORPUS["brown_corpus"] and  (tag['match'] not in acronyms_to_extend_lowered):
+                if tag['match'] in COMMON_WORDS_CORPUS["brown_corpus"] and (tag['match'] not in acronyms_to_extend_lowered):
                     tags_to_remove.append(i)
 
         self.filtered_tags = [i for j, i in enumerate(self.filtered_tags) if j not in tags_to_remove]
@@ -608,28 +605,23 @@ class DocumentAnalysisSpacy(object):
         for concept in concepts:
             sbj_start = sentences_start_chars[concept['sentence']] + concept['subject_range']['start']
             sbj_end = sentences_start_chars[concept['sentence']] + concept['subject_range']['end']
-            sbj_tags = self._tagger.get_tags_in_range(self.filtered_tags,
-                                                          sbj_start,
-                                                          sbj_end)
+            sbj_tags = self._tagger.get_tags_in_range(self.filtered_tags, sbj_start, sbj_end)
             if sbj_tags:
-                concept['subject_tags']={}
+                concept['subject_tags'] = {}
                 sbj_tags_sent_idx = [deepcopy(tag) for tag in sbj_tags]
                 for tag in sbj_tags_sent_idx:
-                    tag['start']-=sentences_start_chars[concept['sentence']]
+                    tag['start'] -= sentences_start_chars[concept['sentence']]
                     tag['end'] -= sentences_start_chars[concept['sentence']]
                     tag_class = tag['category']
                     if tag_class not in concept['subject_tags']:
-                        concept['subject_tags'][tag_class]=[]
+                        concept['subject_tags'][tag_class] = []
                     concept['subject_tags'][tag_class].append(tag)
-
 
             obj_start = sentences_start_chars[concept['sentence']] + concept['object_range']['start']
             obj_end = sentences_start_chars[concept['sentence']] + concept['object_range']['end']
-            obj_tags = self._tagger.get_tags_in_range(self.filtered_tags,
-                                                          obj_start,
-                                                          obj_end)
+            obj_tags = self._tagger.get_tags_in_range(self.filtered_tags, obj_start, obj_end)
             if obj_tags:
-                concept['object_tags']={}
+                concept['object_tags'] = {}
                 obj_tags_sent_idx = [deepcopy(tag) for tag in obj_tags]
                 for tag in obj_tags_sent_idx:
                     tag['start'] -= sentences_start_chars[concept['sentence']]
@@ -642,23 +634,21 @@ class DocumentAnalysisSpacy(object):
         embedding_text = {'plain': self.to_text(),
                           'pos_tag': self.to_pos_tagged_text(),
                           'ent_tag': self.to_entity_tagged_text()}
-        return self.doc, \
-               dict(chunks=noun_phrases,
-                    recurring_chunks=noun_phrases_recurring,
-                    top_chunks=noun_phrases_top,
-                    abbreviations=[dict(short=k, int=v) for k, v in list(abbreviations.items())],
-                    concepts=concepts,
-                    tagged_entities=self.filtered_tags,
-                    tagged_entities_grouped=self._tagger.group_matches_by_category_and_reference(self.filtered_tags),
-                    tagged_text=self._tagger.mark_tags_in_text(self.doc.text, self.filtered_tags),
-                    embedding_text=embedding_text)
+        return self.doc, dict(chunks=noun_phrases,
+                              recurring_chunks=noun_phrases_recurring,
+                              top_chunks=noun_phrases_top,
+                              abbreviations=[dict(short=k, int=v) for k, v in list(abbreviations.items())],
+                              concepts=concepts,
+                              tagged_entities=self.filtered_tags,
+                              tagged_entities_grouped=self._tagger.group_matches_by_category_and_reference(self.filtered_tags),
+                              tagged_text=self._tagger.mark_tags_in_text(self.doc.text, self.filtered_tags),
+                              embedding_text=embedding_text)
 
     @staticmethod
     def get_tokens_in_range(doc, start, end):
         tokens = []
         for t in doc:
-            if start <= t.idx <= end and \
-                                    start <= (t.idx + len(t.text)) <= end + 1:
+            if start <= t.idx <= end and start <= (t.idx + len(t.text)) <= end + 1:
                 tokens.append(t)
             elif t.idx > end:
                 break
@@ -693,22 +683,22 @@ class DocumentAnalysisSpacy(object):
         # print filtered_noun_phrases
         return filtered_noun_phrases
 
-    def to_pos_tagged_text(self, lower = True):
+    def to_pos_tagged_text(self, lower=True):
         text = []
         for sent in self.analysed_sentences:
-            text.append(sent.to_pos_tagged_text(lower = lower))
+            text.append(sent.to_pos_tagged_text(lower=lower))
         return '\n'.join(text)
 
-    def to_text(self, lower = True):
+    def to_text(self, lower=True):
         text = []
         for sent in self.analysed_sentences:
-            text.append(sent.to_text(lower = lower))
+            text.append(sent.to_text(lower=lower))
         return '\n'.join(text)
 
     def to_entity_tagged_text(self,
-                              tags2skip = ['TARGET&DISEASE'],
+                              tags2skip=['TARGET&DISEASE'],
                               lower=True,
-                              use_pos = False):
+                              use_pos=False):
         token_tags = {}
         token_refid = {}
         token_labels = {}
@@ -725,15 +715,15 @@ class DocumentAnalysisSpacy(object):
                     tokens = self.get_tokens_in_range(analyzed_sentence_doc, tag['start'] - s.start_char, tag['end'] - s.start_char)
                     if tag['category'] not in tags2skip:
                         for token in tokens:
-                            if token.i  not in token_tags[s_i]:
+                            if token.i not in token_tags[s_i]:
                                 token_tags[s_i][token.i] = []
                             token_tags[s_i][token.i].append(tag['category'])
                             if token.i not in token_refid[s_i]:
                                 ref = tag['reference']
-                                if '/' in ref:#workaround for uris
-                                    ref=ref.split('/')[-1]
+                                if '/' in ref:  # workaround for uris
+                                    ref = ref.split('/')[-1]
                                 token_refid[s_i][token.i] = ref
-                            if token.i  not in token_labels[s_i]:
+                            if token.i not in token_labels[s_i]:
                                 token_labels[s_i][token.i] = MatchedTag.sanitize_string(tag['label'])
                     break
         # for s_i, s in enumerate(self.doc.sents):
@@ -744,15 +734,13 @@ class DocumentAnalysisSpacy(object):
 
         text = []
         for s_i, sent in enumerate(self.analysed_sentences):
-            sent_text = sent.to_ent_and_pos_tagged_text(ents = token_tags[s_i],
-                                                        ref_ids = token_refid[s_i],
-                                                        labels = token_labels[s_i],
+            sent_text = sent.to_ent_and_pos_tagged_text(ents=token_tags[s_i],
+                                                        ref_ids=token_refid[s_i],
+                                                        labels=token_labels[s_i],
                                                         lower=lower,
                                                         use_pos=use_pos)
-            text.append(sent_text.encode('ascii',errors='ignore'))
+            text.append(sent_text.encode('ascii', errors='ignore'))
         return '\n'.join(text)
-
-
 
 
 class SentenceAnalysisSpacy(object):
@@ -762,7 +750,7 @@ class SentenceAnalysisSpacy(object):
                  abbreviations=None,
                  normalize=True,
                  tagger=None,
-                 stopwords = set()):
+                 stopwords=set()):
         self.logger = logging.getLogger(__name__)
         self._normalizer = AbstractNormalizer()
         self._abbreviations_finder = AbbreviationsParser()
@@ -792,7 +780,7 @@ class SentenceAnalysisSpacy(object):
 
             if abbreviations:
                 for short, int in abbreviations:
-                    if short in sentence and not int in sentence:
+                    if short in sentence and int not in sentence:
                         sentence = sentence.replace(short, int)
             if self._tagger is not None:
                 self.tags = self._tagger.tag(sentence)
@@ -830,7 +818,7 @@ class SentenceAnalysisSpacy(object):
                         # objects
                         alt_subjects.append(sub_subj)
                         # alt_subjects.append(parsed[sub_subj.left_edge.i : sub_subj.right_edge.i + 1].text.lower())
-                '''get other subjects conjuncted to main on to be related to objects in the right side of the verb 
+                '''get other subjects conjuncted to main on to be related to objects in the right side of the verb
                 #risk'''
                 for sub_subj in sibling.conjuncts:
                     # print sub_subj, sub_subj.pos_, sub_subj.dep_
@@ -1006,7 +994,7 @@ class SentenceAnalysisSpacy(object):
                 siblings = list(token.head.children)
                 span_range = [token.i, token.i]
                 for sibling in siblings:
-                    if sibling.dep == token.dep  and sibling.dep_ in not_allowed_conjunction_dep:
+                    if sibling.dep == token.dep and sibling.dep_ in not_allowed_conjunction_dep:
                         if sibling.i > token.i:
                             span_range[1] = sibling.i
                         elif sibling.i < token.i:
@@ -1045,22 +1033,22 @@ class SentenceAnalysisSpacy(object):
                         dependend_objects = self.get_dependent_obj(r, verb_path)
                         for do in dependend_objects:
                             noun_phrases.append(do)
-                            verb_subtree =self.doc[v.left_edge.i: v.right_edge.i + 1].text
-                            concept =dict(
+                            verb_subtree = self.doc[v.left_edge.i: v.right_edge.i + 1].text
+                            concept = dict(
                                 subject=any_subject.text,
-                                subject_range = dict(start=any_subject.idx,
-                                                     end=any_subject.idx + len(any_subject.text)),
+                                subject_range=dict(start=any_subject.idx,
+                                                   end=any_subject.idx + len(any_subject.text)),
                                 object=do.text,
-                                object_range = dict(start=do.idx,
-                                                    end=do.idx + len(do.text)),
+                                object_range=dict(start=do.idx,
+                                                  end=do.idx + len(do.text)),
                                 verb=verb_text,
                                 verb_path=[i.text for i in verb_path],
                                 # subj_ver='%s -> %s' % (any_subject.text, verb_text),
                                 # ver_obj='%s -> %s' % (verb_text, do.text),
                                 # concept='%s -> %s -> %s' % (any_subject.text, verb_text, do.text),
                                 negated=self.isNegated(v) or self.isNegated(any_subject) or \
-                                        self.isNegated(do),
-                                sentence_text = self.doc.text
+                                self.isNegated(do),
+                                sentence_text=self.doc.text
                             )
                             if verb_subtree != self.doc.text:
                                 concept['verb_subtree'] = verb_subtree
@@ -1081,21 +1069,21 @@ class SentenceAnalysisSpacy(object):
         if message != '\n':
             self.logger.debug(message)
 
-    def to_pos_tagged_text(self, lower = True):
+    def to_pos_tagged_text(self, lower=True):
         text = []
         for token in self.doc:
             if token.text and (token.pos != PUNCT and token.text.lower() not in self.stopwords):
                 if lower:
-                    text.append(token.text.strip().replace(' ', '_').lower()+'|'+token.pos_)
+                    text.append(token.text.strip().replace(' ', '_').lower() + '|' + token.pos_)
                 else:
-                    text.append(token.text.strip().replace(' ', '_')+'|'+token.pos_)
+                    text.append(token.text.strip().replace(' ', '_') + '|' + token.pos_)
         return ' '.join(text)
 
-    def to_text(self, lower = True):
+    def to_text(self, lower=True):
         text = []
         for token in self.doc:
             if token.text and (token.pos != PUNCT and token.text.lower() not in self.stopwords):
-                text_to_append =  token.text.strip().replace(' ', '_')
+                text_to_append = token.text.strip().replace(' ', '_')
                 if lower:
                     text_to_append = text_to_append.lower()
                 text.append(text_to_append)
@@ -1106,7 +1094,7 @@ class SentenceAnalysisSpacy(object):
                                    ref_ids,
                                    labels,
                                    lower=True,
-                                   use_pos = False):
+                                   use_pos=False):
         text = []
         for token in self.doc:
             if token.text and (token.pos != PUNCT and token.text.lower() not in self.stopwords):
@@ -1117,15 +1105,15 @@ class SentenceAnalysisSpacy(object):
                     token_text = token.text.strip()
                 if lower:
                     token_text = token_text.lower()
-                token_text= token_text.replace(' ', '_')
+                token_text = token_text.replace(' ', '_')
                 if use_pos:
-                    token_text+='|'+pos
+                    token_text += '|' + pos
                 if token.i in ents:
                     ent = '_'.join(ents[token.i])
-                    token_text+='|'+ent
+                    token_text += '|' + ent
                 if token.i in labels:
                     # try:
-                        token_text+='|'+labels[token.i]
+                    token_text += '|' + labels[token.i]
                     # except UnicodeDecodeError:
                     #     pass#TODO: handle non ascii labels
                 text.append(token_text)
