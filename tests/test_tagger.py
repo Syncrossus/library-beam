@@ -11,14 +11,14 @@ class TaggerTestCase(unittest.TestCase):
     def testTaggerNLP(self):
 
         for i, text in enumerate(file('resources/test_abstract_nlp.txt')):
-            print i
+            print(i)
             for tag in self.tagger.tag(text.lower()):
-               print tag, text[tag['start']:tag['end']]
+               print(tag, text[tag['start']:tag['end']])
 
     def testTaggerLexebi(self):
         for i, text in enumerate(file('resources/test_abstract_lexebi.txt')):
 
-            print i
+            print(i)
             # for tag in tagger.tag(text.lower()):
             #     print tag, text[tag['start']:tag['end']]
             old_tags = set()
@@ -26,13 +26,13 @@ class TaggerTestCase(unittest.TestCase):
             tags = self.tagger.tag(text.lower())
             for tag in tags:
                 matched_text = text[tag['start']:tag['end']]
-                print tag, matched_text
+                print(tag, matched_text)
                 if tag['reference_db'] == 'LEXEBI':
                     lexebi_tags.add(matched_text)
                 else:
                     old_tags.add(matched_text)
             new_tags = lexebi_tags.difference(old_tags)
-            print 'New tags identified : {}'.format(new_tags)
+            print('New tags identified : {}'.format(new_tags))
 
 
 if __name__ == "__main__":

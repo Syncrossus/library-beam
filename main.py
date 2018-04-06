@@ -313,7 +313,7 @@ def parse_medline_xml(record, filename):
                        date=publication.get("first_publication_date"),
                        journal=publication.get('journal'),
                        journal_reference=publication.get("journal_reference"),
-                       full_text=u"",
+                       full_text="",
                        # full_text_url=publication['fullTextUrlList']['fullTextUrl'],
                        keywords=publication.get('keywords'),
                        doi=publication.get('doi'),
@@ -335,7 +335,7 @@ def parse_medline_xml(record, filename):
             if pmid_end:
                 pmid = record[pmid_end - 8:pmid_end]
         except:
-            print e
+            print(e)
         logging.error("Error parsing XML file {} - medline record {}".format(filename, pmid), e.message)
 
 
@@ -426,12 +426,12 @@ def parse_article_info(article, publication):
 def get_text_to_analyze(publication):
     try:
         if publication['title'] and publication['abstract']:
-            return unicode(publication['title'] + ' ' + publication['abstract'])
+            return str(publication['title'] + ' ' + publication['abstract'])
         elif publication['title']:
-            return unicode(publication['title'])
+            return str(publication['title'])
     except KeyError:
         pass
-    return u''
+    return ''
 
 
 class MedlineXMLParser(beam.DoFn):
@@ -446,7 +446,7 @@ class TagBioEntity(beam.DoFn):
         if element:
             text_to_match = get_text_to_analyze(element)
             if text_to_match:
-                if isinstance(text_to_match, unicode):
+                if isinstance(text_to_match, str):
                     text_to_match = text_to_match.encode('utf-8')
                 matches = self.tagger.tag(text_to_match)
                 element['bioentity'] = matches
@@ -531,10 +531,10 @@ class NLPAnalysis(beam.DoFn):
             # u'\w*\S–\S*\w',
             # u'\w*\S—\S*\w',
             # u'\w*[,-.–_—:;\(\)\[\]\{\}/]{1,3}\S\w*'
-            ur'(?P<start_with_non_whitespace_and_one_or_more_punctation>\b\S*|[,.-_-:–;—\(\[\{/\+]?)('
-            ur'?P<has_1_or_more_punctation>[,.-_-:–;—\(\)\[\]\{\}/\+])+('
-            ur'?P<ends_with_non_whitespace_or_non_terminating_punctation>\S+\b[,.-_-:–;—\)\]\}/\+]|[,'
-            ur'.-_-:–;—\)\]\}/\+}]|\S+\b)'
+            r'(?P<start_with_non_whitespace_and_one_or_more_punctation>\b\S*|[,.-_-:–;—\(\[\{/\+]?)('
+            r'?P<has_1_or_more_punctation>[,.-_-:–;—\(\)\[\]\{\}/\+])+('
+            r'?P<ends_with_non_whitespace_or_non_terminating_punctation>\S+\b[,.-_-:–;—\)\]\}/\+]|[,'
+            r'.-_-:–;—\)\]\}/\+}]|\S+\b)'
         ])
         # TODO: prefix and suffix raise TypeError: '_regex.Pattern' object is not callable
         # prefix_boundaries_to_keep =  ur'\) \] \} \> , . - _ - : – ; — \+ -'.split()
@@ -621,9 +621,9 @@ class ExtractConcepts(beam.DoFn):
                         )]
                     concept['relations']=dict(directed=[],
                                               undirected=[])
-                    for stags in concept['subject_tags'].values():
+                    for stags in list(concept['subject_tags'].values()):
                         for s in stags:
-                            for otags in concept['object_tags'].values():
+                            for otags in list(concept['object_tags'].values()):
                                 for o in otags:
                                     relation = s['reference']+'|'+o['reference']
                                     concept['relations']['directed'].append(relation)
@@ -716,7 +716,7 @@ class CleanPublication(beam.DoFn):
 
 class Print(beam.DoFn):
     def process(self, element, *args, **kwargs):
-        print element
+        print(element)
 
 
 class Consume(beam.DoFn):

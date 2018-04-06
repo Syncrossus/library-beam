@@ -18,7 +18,7 @@ def delete_all_output():
                 blob_ref.name.startswith('test/parsed/'+basename)) :
             blob = bucket.get_blob(blob_ref.name)
             blob.delete()
-            print 'deleted', i, blob_ref.name, 'of', len(names)
+            print('deleted', i, blob_ref.name, 'of', len(names))
 
 if __name__ == '__main__':
     delete_all_output()

@@ -8,7 +8,7 @@ from copy import copy, deepcopy
 
 import nltk
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
-from spacy.en import English
+from spacy.lang.en import English
 from spacy.symbols import *
 from spacy.tokens import Span
 from spacy.tokens.doc import Doc
@@ -27,14 +27,14 @@ from textblob.download_corpora import download_lite
 from unidecode import unidecode
 
 import spacy
-from spacy.language_data import TOKENIZER_INFIXES
+from spacy.lang.punctuation import TOKENIZER_INFIXES
 from spacy.tokenizer import Tokenizer
-# import en_core_web_md
-import en_depent_web_md
+import en_core_web_md
+# import en_depent_web_md
 
 
-from AbbreviationFinder import AbbreviationsParser
-from BioStopWords import DOMAIN_STOP_WORDS, COMMON_WORDS_CORPUS
+from .AbbreviationFinder import AbbreviationsParser
+from .BioStopWords import DOMAIN_STOP_WORDS, COMMON_WORDS_CORPUS
 from modules.BioentityTagger import MatchedTag
 
 
@@ -50,10 +50,10 @@ def create_tokenizer(nlp):
         # u'\w*\S–\S*\w',
         # u'\w*\S—\S*\w',
         # u'\w*[,-.–_—:;\(\)\[\]\{\}/]{1,3}\S\w*'
-        ur'(?P<start_with_non_whitespace_and_one_or_more_punctation>\b\S*|[,.-_-:–;—\(\[\{/\+]?)('
-        ur'?P<has_1_or_more_punctation>[,.-_-:–;—\(\)\[\]\{\}/\+])+('
-        ur'?P<ends_with_non_whitespace_or_non_terminating_punctation>\S+\b[,.-_-:–;—\)\]\}/\+]|[,'
-        ur'.-_-:–;—\)\]\}/\+}]|\S+\b)'
+        r'(?P<start_with_non_whitespace_and_one_or_more_punctation>\b\S*|[,.-_-:–;—\(\[\{/\+]?)('
+        r'?P<has_1_or_more_punctation>[,.-_-:–;—\(\)\[\]\{\}/\+])+('
+        r'?P<ends_with_non_whitespace_or_non_terminating_punctation>\S+\b[,.-_-:–;—\)\]\}/\+]|[,'
+        r'.-_-:–;—\)\]\}/\+}]|\S+\b)'
     ])
     # TODO: prefix and suffix raise TypeError: '_regex.Pattern' object is not callable
     # prefix_boundaries_to_keep =  ur'\) \] \} \> , . - _ - : – ; — \+ -'.split()
@@ -91,25 +91,25 @@ NOISY_CATEGORIES = []#['DISEASE',]
 SYMBOLS = " ".join(string.punctuation).split(" ") + ["-----", "---", "...", "â", "â", "'ve"]
 
 LABELS = {
-    u'ENT': u'ENT',
-    u'PERSON': u'ENT',
-    u'NORP': u'ENT',
-    u'FAC': u'ENT',
-    u'ORG': u'ENT',
-    u'GPE': u'ENT',
-    u'LOC': u'ENT',
-    u'LAW': u'ENT',
-    u'PRODUCT': u'ENT',
-    u'EVENT': u'ENT',
-    u'WORK_OF_ART': u'ENT',
-    u'LANGUAGE': u'ENT',
-    u'DATE': u'DATE',
-    u'TIME': u'TIME',
-    u'PERCENT': u'PERCENT',
-    u'MONEY': u'MONEY',
-    u'QUANTITY': u'QUANTITY',
-    u'ORDINAL': u'ORDINAL',
-    u'CARDINAL': u'CARDINAL'
+    'ENT': 'ENT',
+    'PERSON': 'ENT',
+    'NORP': 'ENT',
+    'FAC': 'ENT',
+    'ORG': 'ENT',
+    'GPE': 'ENT',
+    'LOC': 'ENT',
+    'LAW': 'ENT',
+    'PRODUCT': 'ENT',
+    'EVENT': 'ENT',
+    'WORK_OF_ART': 'ENT',
+    'LANGUAGE': 'ENT',
+    'DATE': 'DATE',
+    'TIME': 'TIME',
+    'PERCENT': 'PERCENT',
+    'MONEY': 'MONEY',
+    'QUANTITY': 'QUANTITY',
+    'ORDINAL': 'ORDINAL',
+    'CARDINAL': 'CARDINAL'
 }
 MAX_CHUNKS = 100
 MAX_TERM_FREQ = 200000
@@ -117,54 +117,54 @@ MAX_TERM_FREQ = 200000
 
 class AbstractNormalizer(object):
     greek_alphabet = {
-        u'\u0391': 'Alpha',
-        u'\u0392': 'Beta',
-        u'\u0393': 'Gamma',
-        u'\u0394': 'Delta',
-        u'\u0395': 'Epsilon',
-        u'\u0396': 'Zeta',
-        u'\u0397': 'Eta',
-        u'\u0398': 'Theta',
-        u'\u0399': 'Iota',
-        u'\u039A': 'Kappa',
-        u'\u039B': 'Lamda',
-        u'\u039C': 'Mu',
-        u'\u039D': 'Nu',
-        u'\u039E': 'Xi',
-        u'\u039F': 'Omicron',
-        u'\u03A0': 'Pi',
-        u'\u03A1': 'Rho',
-        u'\u03A3': 'Sigma',
-        u'\u03A4': 'Tau',
-        u'\u03A5': 'Upsilon',
-        u'\u03A6': 'Phi',
-        u'\u03A7': 'Chi',
-        u'\u03A8': 'Psi',
-        u'\u03A9': 'Omega',
-        u'\u03B1': 'alpha',
-        u'\u03B2': 'beta',
-        u'\u03B3': 'gamma',
-        u'\u03B4': 'delta',
-        u'\u03B5': 'epsilon',
-        u'\u03B6': 'zeta',
-        u'\u03B7': 'eta',
-        u'\u03B8': 'theta',
-        u'\u03B9': 'iota',
-        u'\u03BA': 'kappa',
-        u'\u03BB': 'lamda',
-        u'\u03BC': 'mu',
-        u'\u03BD': 'nu',
-        u'\u03BE': 'xi',
-        u'\u03BF': 'omicron',
-        u'\u03C0': 'pi',
-        u'\u03C1': 'rho',
-        u'\u03C3': 'sigma',
-        u'\u03C4': 'tau',
-        u'\u03C5': 'upsilon',
-        u'\u03C6': 'phi',
-        u'\u03C7': 'chi',
-        u'\u03C8': 'psi',
-        u'\u03C9': 'omega',
+        '\u0391': 'Alpha',
+        '\u0392': 'Beta',
+        '\u0393': 'Gamma',
+        '\u0394': 'Delta',
+        '\u0395': 'Epsilon',
+        '\u0396': 'Zeta',
+        '\u0397': 'Eta',
+        '\u0398': 'Theta',
+        '\u0399': 'Iota',
+        '\u039A': 'Kappa',
+        '\u039B': 'Lamda',
+        '\u039C': 'Mu',
+        '\u039D': 'Nu',
+        '\u039E': 'Xi',
+        '\u039F': 'Omicron',
+        '\u03A0': 'Pi',
+        '\u03A1': 'Rho',
+        '\u03A3': 'Sigma',
+        '\u03A4': 'Tau',
+        '\u03A5': 'Upsilon',
+        '\u03A6': 'Phi',
+        '\u03A7': 'Chi',
+        '\u03A8': 'Psi',
+        '\u03A9': 'Omega',
+        '\u03B1': 'alpha',
+        '\u03B2': 'beta',
+        '\u03B3': 'gamma',
+        '\u03B4': 'delta',
+        '\u03B5': 'epsilon',
+        '\u03B6': 'zeta',
+        '\u03B7': 'eta',
+        '\u03B8': 'theta',
+        '\u03B9': 'iota',
+        '\u03BA': 'kappa',
+        '\u03BB': 'lamda',
+        '\u03BC': 'mu',
+        '\u03BD': 'nu',
+        '\u03BE': 'xi',
+        '\u03BF': 'omicron',
+        '\u03C0': 'pi',
+        '\u03C1': 'rho',
+        '\u03C3': 'sigma',
+        '\u03C4': 'tau',
+        '\u03C5': 'upsilon',
+        '\u03C6': 'phi',
+        '\u03C7': 'chi',
+        '\u03C8': 'psi',
+        '\u03C9': 'omega',
     }
 
     def normalize(self, text):
@@ -275,9 +275,9 @@ class NounChuncker(object):
         #         singular_counted_noun_phrases.append(np)
         # singular_counted_noun_phrases = Counter(singular_counted_noun_phrases)
         counted_noun_phrases = Counter(counted_noun_phrases)
-        base_noun_phrases = counted_noun_phrases.keys()
+        base_noun_phrases = list(counted_noun_phrases.keys())
         '''remove plurals with appended s'''
-        for np in counted_noun_phrases.keys():
+        for np in list(counted_noun_phrases.keys()):
             if np + 's' in counted_noun_phrases:
                 counted_noun_phrases[np] += counted_noun_phrases[np + 's']
                 del counted_noun_phrases[np + 's']
@@ -294,7 +294,7 @@ class NounChuncker(object):
                 if k != s and k in s:
                     counted_noun_phrases[k] += 1
         return dict(chunks=base_noun_phrases,
-                    recurring_chunks=[i for i, k in counted_noun_phrases.items() if k > 1],
+                    recurring_chunks=[i for i, k in list(counted_noun_phrases.items()) if k > 1],
                     top_chunks=[i[0] for i in counted_noun_phrases.most_common(5) if i[1] > 1],
                     abbreviations=abbreviations)
 
@@ -321,8 +321,8 @@ class PublicationAnalysisSpacy(object):
         if pub.title or pub.abstract:
             text_to_parse = pub.get_text_to_analyze()
             lemmas, noun_chunks, analysed_sentences_count = self._spacy_analyser(text_to_parse)
-            lemmas = tuple({'value': k, "count": v} for k, v in lemmas.items())
-            noun_chunks = tuple({'value': k, "count": v} for k, v in noun_chunks.items())
+            lemmas = tuple({'value': k, "count": v} for k, v in list(lemmas.items()))
+            noun_chunks = tuple({'value': k, "count": v} for k, v in list(noun_chunks.items()))
             analysed_pub = PublicationAnalysisSpacy(pub_id=pub_id,
                                                     lemmas=lemmas,
                                                     noun_chunks=noun_chunks,
@@ -339,8 +339,8 @@ class PublicationAnalysisSpacy(object):
         ec = Counter()
 
         for e in parsedEx.ents:
-            e_str = u' '.join(t.orth_ for t in e).encode('utf-8').lower()
-            if ((not e.label_) or (e.label_ == u'ENT')) and not (e_str in self.STOPLIST) and not (e_str in SYMBOLS):
+            e_str = ' '.join(t.orth_ for t in e).encode('utf-8').lower()
+            if ((not e.label_) or (e.label_ == 'ENT')) and not (e_str in self.STOPLIST) and not (e_str in SYMBOLS):
                 if e_str not in ec:
                     try:
                         ec[e_str] += tl.count(e_str)
@@ -358,7 +358,7 @@ class PublicationAnalysisSpacy(object):
     # and convert to lemmas
     def tokenizeText(self, sample):
         # get the tokens using spaCy
-        tokens_all = self.parser(unicode(sample))
+        tokens_all = self.parser(str(sample))
         #    for t in tokens_all.noun_chunks:
         #        print(t, list(t.subtree))
         # lemmatize
@@ -471,9 +471,9 @@ class DocumentAnalysisSpacy(object):
             if self._tagger is not None:
                 tags = self._tagger.tag(self.doc.text)
 
-        elif isinstance(document, unicode):
+        elif isinstance(document, str):
             if self.normalize:
-                document = u'' + self._normalizer.normalize(document)
+                document = '' + self._normalizer.normalize(document)
             abbreviations = self._abbreviations_finder.digest_as_dict(document)
             if self._tagger is not None:
                 tags = self._tagger.tag(document)
@@ -481,9 +481,9 @@ class DocumentAnalysisSpacy(object):
             # self.logger.debug('abbreviations: ' + str(abbreviations))
 
             if abbreviations:
-                for short, long in abbreviations.items():
-                    if short in document and not long in document:
-                        document = document.replace(short, long)
+                for short, int in list(abbreviations.items()):
+                    if short in document and not int in document:
+                        document = document.replace(short, int)
             try:
                 self.doc = self.nlp(document)
             except:
@@ -492,7 +492,7 @@ class DocumentAnalysisSpacy(object):
         else:
             raise AttributeError('document needs to be unicode or Doc not %s' % document.__class__)
 
-        allowed_tag_pos = set(('NOUN', 'PROPN', 'ADJ', u'PROPN', u'NOUN', u'ADJ'))
+        allowed_tag_pos = set(('NOUN', 'PROPN', 'ADJ', 'PROPN', 'NOUN', 'ADJ'))
 
         concepts = []
         noun_phrases = []
@@ -519,17 +519,17 @@ class DocumentAnalysisSpacy(object):
             lowered_np = i.lower()
             noun_phrase_counter[lowered_np] = lowered_text.count(lowered_np)
         '''remove plurals with appended s'''
-        for np in noun_phrase_counter.keys():
+        for np in list(noun_phrase_counter.keys()):
             if np + 's' in noun_phrase_counter:
                 noun_phrase_counter[np] += noun_phrase_counter[np + 's']
                 del noun_phrase_counter[np + 's']
         '''increase count of shorter form with longer form'''
-        for short, long in abbreviations.items():
+        for short, int in list(abbreviations.items()):
             if short.lower() in noun_phrase_counter:
-                noun_phrase_counter[long.lower()] += noun_phrase_counter[short.lower()]
+                noun_phrase_counter[int.lower()] += noun_phrase_counter[short.lower()]
                 del noun_phrase_counter[short.lower()]
         noun_phrases_top = [i[0] for i in noun_phrase_counter.most_common(5) if i[1] > 1]
-        noun_phrases_recurring = [i for i, k in noun_phrase_counter.items() if k > 1]
+        noun_phrases_recurring = [i for i, k in list(noun_phrase_counter.items()) if k > 1]
 
         # bug https://github.com/explosion/spaCy/issues/589
         # self.processed_counter+=1
@@ -555,8 +555,8 @@ class DocumentAnalysisSpacy(object):
         acronym_filtered_tags = []
         acronyms_to_extend = {}
         lowered_abbreviations = {i.lower(): i for i in abbreviations}
-        lowered_long_forms = {i.lower(): i for i in abbreviations.values()}
-        inverted_abbreviations = {v.lower(): k for k, v in abbreviations.items()}
+        lowered_long_forms = {i.lower(): i for i in list(abbreviations.values())}
+        inverted_abbreviations = {v.lower(): k for k, v in list(abbreviations.items())}
         for tag in self.filtered_tags:
             matched_text = tag['match'].lower()
             if matched_text in lowered_abbreviations:
@@ -639,14 +639,14 @@ class DocumentAnalysisSpacy(object):
                         concept['object_tags'][tag_class] = []
                     concept['object_tags'][tag_class].append(tag)
 
-        embedding_text = {u'plain': self.to_text(),
-                          u'pos_tag': self.to_pos_tagged_text(),
-                          u'ent_tag': self.to_entity_tagged_text()}
+        embedding_text = {'plain': self.to_text(),
+                          'pos_tag': self.to_pos_tagged_text(),
+                          'ent_tag': self.to_entity_tagged_text()}
         return self.doc, \
                dict(chunks=noun_phrases,
                     recurring_chunks=noun_phrases_recurring,
                     top_chunks=noun_phrases_top,
-                    abbreviations=[dict(short=k, long=v) for k, v in abbreviations.items()],
+                    abbreviations=[dict(short=k, int=v) for k, v in list(abbreviations.items())],
                     concepts=concepts,
                     tagged_entities=self.filtered_tags,
                     tagged_entities_grouped=self._tagger.group_matches_by_category_and_reference(self.filtered_tags),
@@ -684,7 +684,7 @@ class DocumentAnalysisSpacy(object):
                     #     print '%s <- %s'%(j,i)
         # pprint(clusters)
         filtered_noun_phrases = []
-        for k, v in clusters.items():
+        for k, v in list(clusters.items()):
             if len(v) > 1:
                 longest = sorted(v, key=lambda x: len(x), reverse=True)[0]
                 filtered_noun_phrases.append(longest)
@@ -697,13 +697,13 @@ class DocumentAnalysisSpacy(object):
         text = []
         for sent in self.analysed_sentences:
             text.append(sent.to_pos_tagged_text(lower = lower))
-        return u'\n'.join(text)
+        return '\n'.join(text)
 
     def to_text(self, lower = True):
         text = []
         for sent in self.analysed_sentences:
             text.append(sent.to_text(lower = lower))
-        return u'\n'.join(text)
+        return '\n'.join(text)
 
     def to_entity_tagged_text(self,
                               tags2skip = ['TARGET&DISEASE'],
@@ -750,7 +750,7 @@ class DocumentAnalysisSpacy(object):
                                                         lower=lower,
                                                         use_pos=use_pos)
             text.append(sent_text.encode('ascii',errors='ignore'))
-        return u'\n'.join(text)
+        return '\n'.join(text)
 
 
 
@@ -781,19 +781,19 @@ class SentenceAnalysisSpacy(object):
             self.doc = sentence.doc
             if self._tagger is not None:
                 self.tags = self._tagger.tag(self.doc.text)
-        elif isinstance(sentence, unicode):
+        elif isinstance(sentence, str):
             if not sentence.replace('\n', '').strip():
                 raise AttributeError('sentence cannot be empty')
             if normalize:
-                sentence = u'' + self._normalizer.normalize(sentence)
+                sentence = '' + self._normalizer.normalize(sentence)
             if abbreviations is None:
                 self.abbreviations = self._abbreviations_finder.digest_as_dict(sentence)
                 # self.logger.info('abbreviations: ' + str(self.abbreviations))
 
             if abbreviations:
-                for short, long in abbreviations:
-                    if short in sentence and not long in sentence:
-                        sentence = sentence.replace(short, long)
+                for short, int in abbreviations:
+                    if short in sentence and not int in sentence:
+                        sentence = sentence.replace(short, int)
             if self._tagger is not None:
                 self.tags = self._tagger.tag(sentence)
             self.sentence = nlp(sentence)
@@ -976,11 +976,11 @@ class SentenceAnalysisSpacy(object):
         :return:
         '''
         prev_span = ''
-        open_brackets = u'( { [ <'.split()
-        closed_brackets = u') } ] >'.split()
+        open_brackets = '( { [ <'.split()
+        closed_brackets = ') } ] >'.split()
         for token in self.sentence:
             try:
-                if token.text in open_brackets and token.whitespace_ == u'':
+                if token.text in open_brackets and token.whitespace_ == '':
                     next_token = token.nbor(1)
                     if any([i in next_token.text for i in closed_brackets]):
                         span = Span(self.doc, token.i, next_token.i + 1)
@@ -1086,20 +1086,20 @@ class SentenceAnalysisSpacy(object):
         for token in self.doc:
             if token.text and (token.pos != PUNCT and token.text.lower() not in self.stopwords):
                 if lower:
-                    text.append(token.text.strip().replace(u' ', u'_').lower()+u'|'+token.pos_)
+                    text.append(token.text.strip().replace(' ', '_').lower()+'|'+token.pos_)
                 else:
-                    text.append(token.text.strip().replace(u' ', u'_')+u'|'+token.pos_)
-        return u' '.join(text)
+                    text.append(token.text.strip().replace(' ', '_')+'|'+token.pos_)
+        return ' '.join(text)
 
     def to_text(self, lower = True):
         text = []
         for token in self.doc:
             if token.text and (token.pos != PUNCT and token.text.lower() not in self.stopwords):
-                text_to_append =  token.text.strip().replace(u' ', u'_')
+                text_to_append =  token.text.strip().replace(' ', '_')
                 if lower:
                     text_to_append = text_to_append.lower()
                 text.append(text_to_append)
-        return u' '.join(text)
+        return ' '.join(text)
 
     def to_ent_and_pos_tagged_text(self,
                                    ents,
@@ -1117,16 +1117,16 @@ class SentenceAnalysisSpacy(object):
                     token_text = token.text.strip()
                 if lower:
                     token_text = token_text.lower()
-                token_text= token_text.replace(u' ', u'_')
+                token_text= token_text.replace(' ', '_')
                 if use_pos:
-                    token_text+=u'|'+pos
+                    token_text+='|'+pos
                 if token.i in ents:
-                    ent = u'_'.join(ents[token.i])
-                    token_text+=u'|'+ent
+                    ent = '_'.join(ents[token.i])
+                    token_text+='|'+ent
                 if token.i in labels:
                     # try:
-                        token_text+=u'|'+labels[token.i]
+                        token_text+='|'+labels[token.i]
                     # except UnicodeDecodeError:
                     #     pass#TODO: handle non ascii labels
                 text.append(token_text)
-        return u' '.join(text)
+        return ' '.join(text)

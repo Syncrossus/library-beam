@@ -20,9 +20,9 @@ import re
 from textblob import TextBlob
 
 
-class Candidate(unicode):
+class Candidate(str):
     def __new__(cls, start, stop, str):
-        return unicode.__new__(cls, str)
+        return str.__new__(cls, str)
 
     def __init__(self, start, stop, str):
         self._start = start
@@ -31,7 +31,7 @@ class Candidate(unicode):
     def __getslice__(self, i, j):
         start = self.start + i
         stop = self.start + j
-        str = unicode.__getslice__(self, i, j)
+        str = str.__getslice__(self, i, j)
         return Candidate(start, stop, str)
 
     @property
@@ -55,7 +55,7 @@ class AbbreviationsParser(object):
         self.logger = logging.getLogger(__name__)
 
     def digest(self, textblob):
-        if isinstance(textblob, (str, unicode)):
+        if isinstance(textblob, str):
            textblob = TextBlob(textblob)
         return list(self._digest_iterator(textblob))
 
@@ -102,7 +102,7 @@ class AbbreviationsParser(object):
                             dline = '%d %d %d %s' % (i, definition.start, definition.stop, definition)
 
                             yield dict(short=candidate.encode(self.encoding),
-                                        long=definition.encode(self.encoding))
+                                        int=definition.encode(self.encoding))
                             # print cline.encode(self.encoding)
                             # print dline.encode(self.encoding)
                             # print

@@ -9,11 +9,11 @@ import requests
 from fuzzywuzzy import fuzz
 from rope.base.codeanalyze import ChangeCollector
 
-from BioStopWords import DOMAIN_STOP_WORDS
+from .BioStopWords import DOMAIN_STOP_WORDS
 from modules.vocabulary import vocabulary_urls
 
-unicode_punctation_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
-                                         if unicodedata.category(unichr(i)).startswith('P'))
+unicode_punctation_table = dict.fromkeys(i for i in range(sys.maxunicode)
+                                         if unicodedata.category(chr(i)).startswith('P'))
 
 
 class BioEntityTagger(object):
@@ -54,7 +54,7 @@ class BioEntityTagger(object):
             dictionary = dictionary_request.json()
             category, reference_db = dictionary_url.split('/')[-1].split('.')[0].split('_')[0].split('-')
             '''load the elements in the Automation if they are not too short or are stopwords'''
-            for element, element_data in dictionary.items():
+            for element, element_data in list(dictionary.items()):
                 ids = element_data['ids']
                 pref_name = element_data['pref_name']
                 if len(element) > 2:
@@ -144,7 +144,7 @@ class BioEntityTagger(object):
         :param ignorecase: deafault to True
         :return:
         '''
-        if isinstance(text, unicode):
+        if isinstance(text, str):
             text_to_tag = text.encode('utf-8')
         else:
             text_to_tag = text
@@ -153,7 +153,7 @@ class BioEntityTagger(object):
         matches = []
         for i in automation.iter(text_to_tag.lower()):
             if len(i[1]) < 7:
-                print i
+                print(i)
         for end_index, (insert_order, category_list, reference_db_list, entity_id_list, original_value, match,
                         pref_name) in automation.iter(text_to_tag.lower()):
             start_index = end_index - len(match) + 1
@@ -185,7 +185,7 @@ class BioEntityTagger(object):
 
         grouped_matches = BioEntityTagger.group_matches_by_category_and_reference(matches)
         filtered_matches = []
-        for group, matches_in_group in grouped_matches.items():
+        for group, matches_in_group in list(grouped_matches.items()):
             non_nested_matches = BioEntityTagger.remove_nested_matches(matches_in_group)
             filtered_matches.extend(non_nested_matches)
 
@@ -232,7 +232,7 @@ class BioEntityTagger(object):
         '''
         text_to_tag = text
         tagged_abstract = ''
-        if isinstance(text, unicode):
+        if isinstance(text, str):
             text_to_tag = text.encode('utf-8')
         try:
             tagged_abstract = ChangeCollector(text_to_tag)
@@ -274,7 +274,7 @@ class BioEntityTagger(object):
     @staticmethod
     def extend_tags_to_alternative_forms(text, extended_forms):
         A = ahocorasick.Automaton()
-        for text_to_match, payload in extended_forms.items():
+        for text_to_match, payload in list(extended_forms.items()):
             A.add_word(text_to_match.lower(),
                        [0, [payload['category']], [payload['reference_db']], [payload['reference']],
                         payload['original_value'],
@@ -308,11 +308,11 @@ class MatchedTag(object):
 
     @staticmethod
     def sanitize_string(s):
-        if isinstance(s, unicode):
+        if isinstance(s, str):
             return s.translate(unicode_punctation_table)
         elif isinstance(s, str):
-            return unicode(s.translate(string.maketrans(' ', '_'), string.punctuation))
+            return str(s.translate(string.maketrans(' ', '_'), string.punctuation))
         else:
-            return u''
+            return ''
 
 # TODO: use inflection.table.ascii from SPECIALIST lexicon to enhance matching forms

@@ -21,7 +21,7 @@ class MedlineParser(unittest.TestCase):
                 try:
                     out.write(parsed['abstract'].encode('utf-8').replace('\n','')+'\n')
                 except Exception as e:
-                    print 'could not parse', e
+                    print('could not parse', e)
 
 
 
