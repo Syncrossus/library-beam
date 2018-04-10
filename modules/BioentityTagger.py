@@ -17,15 +17,13 @@ unicode_punctation_table = dict.fromkeys(i for i in range(sys.maxunicode)
 
 
 class BioEntityTagger(object):
-    separators_all = [' ', '.', ',', ';', ':', ')', ']', '(', '[', '{', '}', '/', '\\', '"', "'", '?', '!', '<', '>',
-                      '+', '-']
+    separators_all = [' ', '.', ',', ';', ':', ')', ']', '(', '[', '{', '}', '/', '\\', '"', "'", '?', '!', '<', '>', '+', '-']
 
     def __init__(self,
                  partial_match=False,
                  ignorecase=True,
                  stopwords=None):
         '''
-
         :param partial_match:  allow for matching a non clomplete word
         :param ignorecase: case sensitive or not
         :param stopwords: stopwords to skip, defaults to a very broad list
@@ -58,7 +56,7 @@ class BioEntityTagger(object):
                 ids = element_data['ids']
                 pref_name = element_data['pref_name']
                 if len(element) > 2:
-                    element_str = element.encode('utf-8')
+                    element_str = element
                     if ((len(element_str) < 5) and (element_str not in stopwords) or
                             (len(element_str) >= 5) and (element_str.lower() not in stopwords)):
                         idx += 1
@@ -66,14 +64,19 @@ class BioEntityTagger(object):
                             element_match = element_str.lower()
                         else:
                             element_match = element_str
-                        self.add_tag(element_match,
-                                     idx,
-                                     category,
-                                     reference_db,
-                                     [i.encode('utf-8') for i in ids],
-                                     element,
-                                     element_match,
-                                     pref_name)
+                        try:
+                            self.add_tag(element_match,
+                                         idx,
+                                         category,
+                                         reference_db,
+                                         [i for i in ids],
+                                         element,
+                                         element_match,
+                                         pref_name)
+                        except TypeError as e:
+                            print(element_match)
+                            print(type(element_match))
+                            raise e
                         '''handle elements with dashes by also creating a copy without'''
                         if '-' in element_match:
                             element_match_without_dash = element_match.replace('-', '')
@@ -82,20 +85,21 @@ class BioEntityTagger(object):
                                              idx,
                                              category,
                                              reference_db,
-                                             [i.encode('utf-8') for i in ids],
+                                             [i for i in ids],
                                              element,
                                              element_match_without_dash,
                                              pref_name)
                         '''if supporting partial match'''
                         if self.partial_match:
                             for longest_token in element.split():
-                                if longest_token != element and len(
-                                        longest_token) > 5 and longest_token.lower() not in stopwords:
+                                if longest_token != element and \
+                                   len(longest_token) > 5 and \
+                                   longest_token.lower() not in stopwords:
                                     self.add_tag(longest_token,
                                                  idx,
                                                  category + '-TOKEN',
                                                  reference_db,
-                                                 [i.encode('utf-8') for i in ids],
+                                                 [i for i in ids],
                                                  element,
                                                  longest_token,
                                                  pref_name)
@@ -107,7 +111,11 @@ class BioEntityTagger(object):
         unique_resource_key = category + '|' + reference_db
         category_insert = [category]
         reference_db_insert = [reference_db]
-        ids_insert = [[i.encode('utf-8') for i in ids]]
+        try:
+            ids_insert = [[i for i in ids]]
+        except AttributeError:
+            ids_insert = [[i for i in ids]]
+
         previous_annotation = self.A.get(element_text, None)
 
         if previous_annotation is None:
@@ -145,7 +153,7 @@ class BioEntityTagger(object):
         :return:
         '''
         if isinstance(text, str):
-            text_to_tag = text.encode('utf-8')
+            text_to_tag = text
         else:
             text_to_tag = text
         if ignorecase:
@@ -160,7 +168,7 @@ class BioEntityTagger(object):
             end_index += 1
 
             if (start_index == 0 or text_to_tag[start_index - 1] in BioEntityTagger.separators_all) and \
-                    (end_index == len(text_to_tag) or text_to_tag[end_index] in BioEntityTagger.separators_all):
+               (end_index == len(text_to_tag) or text_to_tag[end_index] in BioEntityTagger.separators_all):
                 for j in range(len(category_list)):
                     category = category_list[j]
                     reference_db = reference_db_list[j]
@@ -233,7 +241,7 @@ class BioEntityTagger(object):
         text_to_tag = text
         tagged_abstract = ''
         if isinstance(text, str):
-            text_to_tag = text.encode('utf-8')
+            text_to_tag = text
         try:
             tagged_abstract = ChangeCollector(text_to_tag)
             for i, tag in enumerate(
